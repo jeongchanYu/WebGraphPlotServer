@@ -196,7 +196,7 @@ if __name__ == "__main__":
     print("-P : change passward (default:{})".format(password))
     print("-p : change port number (default:{})".format(serverPort))
     print("-I : change IP address (default:auto)")
-    print("If you want to change parameter, re run program with <$sudo python WGBserver.py -P (passward) -p (portnumber)> -I (ip-address)")
+    print("If you want to change parameter, re run program with <$sudo python WGBserver.py -P (passward) -p (portnumber) -I (ip-address)>")
     print()
 
     custom_IP_flag = False
