@@ -1,8 +1,12 @@
 # Python 3 server example
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-import socket
-import sys
-from urllib import parse
+try:
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    import socket
+    import sys
+    from urllib import parse
+    import os
+except:
+    raise Exception("E: Check python version. WGPServer operated in python3")
 login_html = """
 <html>
     <head>
@@ -44,7 +48,6 @@ graph_mid_html2 = """
 chart.render();}
 </script>
 </head>
-
 <body>
 <div class="container" id="chartContainer" style="height: 30em; width: 100%;"></div>
 <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
@@ -53,7 +56,6 @@ chart.render();}
     <input type="button" id="refresh" value="Refresh" style="font-size:2em; float:right;" onclick="refresh();">
     <span style = "font-size:2em;">Refresh Time (sec)</span> <input type="text" id="refresh_time" value="" style="font-size:2em;" onchange="refresh_time();">
 </div>
-
 <script type="text/javascript">
 """
 
@@ -66,7 +68,6 @@ if(auto_refresh_bool){
 else{
     document.getElementById('auto_refresh').style.backgroundColor='rgb(255,150,150)';
 }
-
 function send_post(n, v){
     str = '<form id="smb_form" method="post">';
     for(i=0; i<arguments.length/2; i++){
@@ -101,11 +102,19 @@ function refresh_time(){
     loop=setTimeout(send_post, refresh_time_int*1000, "refresh", auto_refresh_bool, "refresh_time", refresh_time_int);
 }
 </script>
-
 </body>
 </html>
 """
 
+def createFolder(directory):
+    """
+    Create folder, if directory is not exist
+    """
+    try:
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+    except OSError:
+        raise Exception("Could not make ./wgp_temp folder.)
 
 class MyServer(BaseHTTPRequestHandler):
     def _set_response(self):
@@ -124,7 +133,12 @@ class MyServer(BaseHTTPRequestHandler):
             self.wfile.write(bytes('Ex) {x:1, y:0.01},{x:2, y:0.02},{x:3, y:0.03}, ... ,{x:index, y:value},', 'utf8'))
         else:
             if self.check_file(self.path[1:], "plot"):
-                self.wfile.write(bytes(login_html, 'utf8'))
+                with open("./wgp_temp/allow_ip.txt", 'r') as f:
+                    allow_ip = f.read().split('\n')
+                    if self.client_address[0] in allow_ip:
+                        self.draw_graph(self.path[1:])
+                    else:
+                        self.wfile.write(bytes(login_html, 'utf8'))
             else:
                 self.wfile.write(bytes('<strong>Insert {}:{}/<*.plot file path> to address bar</strong><br><br>'.format(hostName, serverPort), 'utf8'))
                 self.wfile.write(bytes('Ex) {}:{}/home/graph.plot<br><br><br>'.format(hostName, serverPort), 'utf8'))
@@ -142,6 +156,9 @@ class MyServer(BaseHTTPRequestHandler):
                 self.message_window("login failed")
                 self.wfile.write(bytes(login_html, 'utf8'))
                 return
+            print("Login -", self.client_address[0])
+            with open("./wgp_temp/allow_ip.txt", 'a') as f:
+                f.write(self.client_address[0] + '\n')
             self.draw_graph(self.path[1:])
         if post_data[0][0] == 'refresh':
             self.draw_graph(self.path[1:], post_data[0][1], int(post_data[1][1]))
@@ -190,13 +207,17 @@ if __name__ == "__main__":
     password = "1234"
     hostName = "0.0.0.0"
 
+    createFolder("./wgp_temp")
+    with open("./wgp_temp/allow_ip.txt", 'a') as f:
+        pass
+
     print("Web graph plot Server")
     print()
     print("< Program options >")
     print("-P : change passward (default:{})".format(password))
     print("-p : change port number (default:{})".format(serverPort))
     print("-I : change IP address (default:auto)")
-    print("If you want to change parameter, re run program with <$sudo python WGBserver.py -P (passward) -p (portnumber) -I (ip-address)>")
+    print("If you want to change parameter, re run program with <$python WGBserver.py -P (passward) -p (portnumber)> -I (ip-address)")
     print()
 
     custom_IP_flag = False
