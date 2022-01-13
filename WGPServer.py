@@ -114,7 +114,7 @@ def createFolder(directory):
         if not os.path.exists(directory):
             os.makedirs(directory)
     except OSError:
-        raise Exception("Could not make ./wgp_temp folder.)
+        raise Exception("Could not make ./wgp_temp folder.")
 
 class MyServer(BaseHTTPRequestHandler):
     def _set_response(self):
